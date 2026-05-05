@@ -5,88 +5,55 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Researcher Network</title>
   <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
-  <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-      overflow: hidden;
-      background: #0d1117;
-      color: #c9d1d9;
+      display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+      background: #0d1117; color: #c9d1d9;
     }
 
     /* ── Header ── */
     #header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 16px;
-      height: 48px;
-      background: #161b22;
-      border-bottom: 1px solid #30363d;
-      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 16px; height: 48px;
+      background: #161b22; border-bottom: 1px solid #30363d; flex-shrink: 0;
     }
     #header h1 { font-size: 15px; font-weight: 600; color: #e6edf3; }
     #header-controls { display: flex; align-items: center; gap: 10px; }
 
     .btn {
-      padding: 5px 12px;
-      border: 1px solid #30363d;
-      border-radius: 6px;
-      background: #21262d;
-      color: #c9d1d9;
-      cursor: pointer;
-      font-size: 12px;
+      padding: 5px 12px; border: 1px solid #30363d; border-radius: 6px;
+      background: #21262d; color: #c9d1d9; cursor: pointer; font-size: 12px;
       transition: background 0.15s, border-color 0.15s;
     }
     .btn:hover { background: #30363d; border-color: #8b949e; }
 
     .toggle-label {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 12px;
-      cursor: pointer;
-      user-select: none;
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; cursor: pointer; user-select: none;
     }
     .toggle-label input { accent-color: #388bfd; cursor: pointer; }
 
-    /* ── Main layout ── */
+    /* ── Layout ── */
     #main { display: flex; flex: 1; overflow: hidden; }
 
-    /* ── Sidebar ── */
     #sidebar {
-      width: 265px;
-      background: #161b22;
-      border-right: 1px solid #30363d;
-      overflow-y: auto;
-      flex-shrink: 0;
-      padding: 10px 10px 20px;
+      width: 265px; background: #161b22; border-right: 1px solid #30363d;
+      overflow-y: auto; flex-shrink: 0; padding: 10px 10px 20px;
     }
 
     .section { margin-bottom: 16px; }
     .section h3 {
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.09em;
-      color: #8b949e;
-      margin-bottom: 8px;
-      padding-bottom: 4px;
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.09em;
+      color: #8b949e; margin-bottom: 8px; padding-bottom: 4px;
       border-bottom: 1px solid #21262d;
     }
 
     #search-input {
-      width: 100%;
-      padding: 6px 10px;
-      border-radius: 6px;
-      border: 1px solid #30363d;
-      background: #0d1117;
-      color: #c9d1d9;
-      font-size: 12px;
+      width: 100%; padding: 6px 10px; border-radius: 6px;
+      border: 1px solid #30363d; background: #0d1117; color: #c9d1d9; font-size: 12px;
     }
     #search-input:focus { outline: none; border-color: #388bfd; }
     #search-btn { width: 100%; margin-top: 6px; }
@@ -94,115 +61,65 @@
     .slider-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
     #pub-slider { flex: 1; accent-color: #388bfd; cursor: pointer; }
 
-    /* ── Institute filter ── */
     .filter-controls { display: flex; gap: 5px; margin-bottom: 6px; }
     .filter-controls .btn { flex: 1; font-size: 11px; padding: 3px 6px; }
 
     #institute-list { max-height: 240px; overflow-y: auto; }
     .filter-label {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 2px 3px;
-      border-radius: 3px;
-      cursor: pointer;
-      font-size: 11px;
-      line-height: 1.5;
+      display: flex; align-items: center; gap: 6px;
+      padding: 2px 3px; border-radius: 3px;
+      cursor: pointer; font-size: 11px; line-height: 1.5;
     }
     .filter-label:hover { background: #21262d; }
     .filter-label input { cursor: pointer; accent-color: #388bfd; flex-shrink: 0; }
-    .filter-label .inst-dot {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-    .filter-label .inst-count {
-      margin-left: auto;
-      color: #6e7681;
-      font-size: 10px;
-      padding-left: 4px;
-    }
+    .filter-label .inst-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .filter-label .inst-count { margin-left: auto; color: #6e7681; font-size: 10px; padding-left: 4px; }
 
-    /* ── Legend ── */
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 2px 0;
-      font-size: 11px;
-      line-height: 1.4;
-    }
-    .legend-dot {
-      width: 10px; height: 10px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
+    .legend-item { display: flex; align-items: center; gap: 8px; padding: 2px 0; font-size: 11px; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 
-    /* ── Graph area ── */
+    /* ── Graph ── */
     #graph-container { flex: 1; position: relative; overflow: hidden; background: #0d1117; }
     #vis-container { position: absolute; inset: 0; }
 
-    /* ── Loading overlay ── */
+    /* ── Loading ── */
     #loading-overlay {
-      position: absolute;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      background: rgba(22, 27, 34, 0.96);
-      padding: 22px 30px;
-      border-radius: 10px;
-      border: 1px solid #30363d;
-      text-align: center;
-      z-index: 10;
-      min-width: 220px;
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      background: rgba(22,27,34,0.96); padding: 22px 30px; border-radius: 10px;
+      border: 1px solid #30363d; text-align: center; z-index: 10; min-width: 220px;
     }
     .spinner {
-      width: 28px; height: 28px;
-      border: 3px solid #30363d;
-      border-top-color: #388bfd;
-      border-radius: 50%;
-      animation: spin 0.75s linear infinite;
-      margin: 0 auto 10px;
+      width: 28px; height: 28px; border: 3px solid #30363d; border-top-color: #388bfd;
+      border-radius: 50%; animation: spin 0.75s linear infinite; margin: 0 auto 10px;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
     #loading-text { font-size: 12px; color: #388bfd; }
 
-    /* ── Node info popup ── */
+    /* ── Popup ── */
     #popup {
-      position: absolute;
-      display: none;
-      z-index: 20;
-      background: rgba(22, 27, 34, 0.97);
-      border: 1px solid #388bfd;
-      border-radius: 8px;
-      padding: 12px 14px 10px;
-      max-width: 290px;
-      min-width: 180px;
-      font-size: 12px;
-      line-height: 1.55;
-      box-shadow: 0 6px 28px rgba(0, 0, 0, 0.55);
+      position: absolute; display: none; z-index: 20;
+      background: rgba(22,27,34,0.97); border: 1px solid #388bfd;
+      border-radius: 8px; padding: 12px 14px 10px;
+      max-width: 290px; min-width: 180px;
+      font-size: 12px; line-height: 1.55;
+      box-shadow: 0 6px 28px rgba(0,0,0,0.55);
     }
     #popup-close {
-      position: absolute;
-      top: 5px; right: 9px;
-      background: none; border: none;
-      color: #6e7681; cursor: pointer;
-      font-size: 17px; line-height: 1; padding: 0;
+      position: absolute; top: 5px; right: 9px;
+      background: none; border: none; color: #6e7681;
+      cursor: pointer; font-size: 17px; line-height: 1; padding: 0;
     }
     #popup-close:hover { color: #e6edf3; }
-    #popup-author {
-      font-weight: 600; font-size: 13px; color: #388bfd;
-      margin-bottom: 5px; padding-right: 18px; word-break: break-word;
-    }
-    #popup-affil { color: #8b949e; margin-bottom: 4px; word-break: break-word; }
-    #popup-meta  { color: #6e7681; }
+    #popup-author { font-weight: 600; font-size: 13px; color: #388bfd; margin-bottom: 5px; padding-right: 18px; word-break: break-word; }
+    #popup-affil  { color: #8b949e; margin-bottom: 4px; word-break: break-word; }
+    #popup-meta   { color: #6e7681; }
 
-    /* ── Node count badge ── */
+    /* ── Status badge ── */
     #node-count {
       position: absolute; bottom: 10px; right: 10px;
       font-size: 11px; color: #6e7681;
-      background: rgba(22, 27, 34, 0.8);
-      padding: 3px 9px; border-radius: 4px;
-      pointer-events: none;
+      background: rgba(22,27,34,0.8); padding: 3px 9px;
+      border-radius: 4px; pointer-events: none;
     }
   </style>
 </head>
@@ -212,15 +129,13 @@
   <h1>Researcher Network</h1>
   <div id="header-controls">
     <label class="toggle-label">
-      <input type="checkbox" id="toggle-labels">
-      Show All Names
+      <input type="checkbox" id="toggle-labels"> Show All Names
     </label>
     <button class="btn" id="reset-view-btn">Reset View</button>
   </div>
 </div>
 
 <div id="main">
-
   <div id="sidebar">
 
     <div class="section">
@@ -231,9 +146,9 @@
     </div>
 
     <div class="section">
-      <h3>Min Publications: <span id="pub-val">3</span></h3>
+      <h3>Min Publications: <span id="pub-val">–</span></h3>
       <div class="slider-row">
-        <input type="range" id="pub-slider" min="1" max="15" value="3">
+        <input type="range" id="pub-slider" min="1" max="100" value="1">
       </div>
     </div>
 
@@ -251,58 +166,44 @@
       <div id="legend-list"></div>
     </div>
 
-  </div><!-- /sidebar -->
+  </div>
 
   <div id="graph-container">
     <div id="vis-container"></div>
-
     <div id="loading-overlay">
       <div class="spinner"></div>
-      <div id="loading-text">Loading data…</div>
+      <div id="loading-text">Loading graph…</div>
     </div>
-
     <div id="popup">
       <button id="popup-close">×</button>
       <div id="popup-author"></div>
       <div id="popup-affil"></div>
       <div id="popup-meta"></div>
     </div>
-
     <div id="node-count"></div>
-  </div><!-- /graph-container -->
-
-</div><!-- /main -->
+  </div>
+</div>
 
 <script>
-// ── Palette (20 distinct colors, recycled for institutes beyond 20) ──────────
-const PALETTE = [
-  '#e6194b', '#3cb44b', '#4363d8', '#f58231', '#42d4f4',
-  '#911eb4', '#f032e6', '#ffe119', '#469990', '#9a6324',
-  '#800000', '#aaffc3', '#dcbeff', '#ffd8b1', '#000075',
-  '#bfef45', '#fabed4', '#808000', '#a9a9a9', '#fffac8'
-];
-const OTHER_COLOR     = '#4a5568';   // authors with no matched institute
+// ── State ─────────────────────────────────────────────────────────────────────
 const HIGHLIGHT_COLOR = '#ffffff';
+const OTHER_COLOR     = '#4a5568';
 
-// ── Global state ─────────────────────────────────────────────────────────────
-let allNodes          = new Map();   // author → {publication_count, affiliations, country}
-let adjacencyMap      = new Map();   // author → [{target, weight}]
-let allInstitutes     = [];          // [{name, count, color}] sorted by frequency
-let instColorMap      = new Map();   // institute name → hex color
-let nodeInstMap       = new Map();   // author → [institute names]
-let selectedInstitutes = new Set();  // currently selected institute names
-let currentMinPub     = 3;
+let allNodes          = new Map();   // id → {pub, aff, color, inst}
+let allInstitutes     = [];          // [{name, color, count}]
+let selectedInstitutes = new Set();
+let currentMinPub     = 1;
+let minPubInData      = 1;
+let maxPubInData      = 1;
+
 let network           = null;
 let nodesDS           = null;
 let edgesDS           = null;
-let savedPositions    = {};
-let hoverEdgeIds      = [];          // edge IDs currently shown on hover
-let nodeEdgeIndex     = new Map();   // author → [physics edge IDs] — for fast hover lookup
+let nodeEdgeIndex     = new Map();   // node id → [edge ids]
+let hoverEdgeIds      = [];
 let showLabels        = false;
-let rebuildTimer      = null;
-let isPhysicsDone     = false;
 
-// ── Loading helper ────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 function setLoading(msg) {
   const el = document.getElementById('loading-overlay');
   if (!msg) { el.style.display = 'none'; return; }
@@ -310,257 +211,133 @@ function setLoading(msg) {
   document.getElementById('loading-text').textContent = msg;
 }
 
-// ── CSV fetch ─────────────────────────────────────────────────────────────────
-async function fetchParsed(path) {
-  const resp = await fetch(path);
-  if (!resp.ok) throw new Error(`Cannot load "${path}": ${resp.status} ${resp.statusText}`);
-  const text = await resp.text();
-  return Papa.parse(text, { header: true, skipEmptyLines: true }).data;
+function nodeSize(pub) { return 4 + Math.sqrt(pub) * 8; }
+
+function isNodeVisible(id, data) {
+  return data.pub >= currentMinPub && selectedInstitutes.has(data.inst);
 }
 
-// ── Entry point ───────────────────────────────────────────────────────────────
-async function loadData() {
-  setLoading('Loading data…');
+// ── Load graph.json ───────────────────────────────────────────────────────────
+async function loadGraph() {
+  setLoading('Loading graph…');
 
-  const [nodeRows, edgeRows] = await Promise.all([
-    fetchParsed('nodes.csv'),
-    fetchParsed('edges.csv')
-  ]);
+  const resp = await fetch('graph.json');
+  if (!resp.ok) throw new Error(`Cannot load graph.json: ${resp.status} ${resp.statusText}`);
+  const data = await resp.json();
 
-  for (const row of nodeRows) {
-    const author = (row.author || '').trim();
-    if (!author) continue;
-    allNodes.set(author, {
-      publication_count: Math.max(1, parseInt(row.publication_count) || 1),
-      affiliations: (row.affiliations || '').trim(),
-      country: (row.country || '').trim()
-    });
+  const { meta, institutes, nodes, edges } = data;
+
+  minPubInData  = meta.min_pub;
+  maxPubInData  = meta.max_pub;
+  currentMinPub = meta.min_pub;
+
+  // Configure slider to match data range
+  const slider = document.getElementById('pub-slider');
+  slider.min   = meta.min_pub;
+  slider.max   = meta.max_pub;
+  slider.value = meta.min_pub;
+  document.getElementById('pub-val').textContent = meta.min_pub;
+
+  // Build node map
+  for (const n of nodes) {
+    allNodes.set(n.id, { pub: n.pub, aff: n.aff, color: n.color, inst: n.inst, x: n.x, y: n.y });
   }
 
-  // Bidirectional adjacency map — edges are NOT rendered until hover
-  for (const row of edgeRows) {
-    const s = (row.source || '').trim();
-    const t = (row.target || '').trim();
-    if (!s || !t || s === t) continue;
-    const w = Math.max(1, parseInt(row.weight) || 1);
-    if (!adjacencyMap.has(s)) adjacencyMap.set(s, []);
-    adjacencyMap.get(s).push({ target: t, weight: w });
-    if (!adjacencyMap.has(t)) adjacencyMap.set(t, []);
-    adjacencyMap.get(t).push({ target: s, weight: w });
-  }
-
-  computeInstitutes();
-  populateDatalist();
-  buildNetwork();
-}
-
-// ── Institute extraction ──────────────────────────────────────────────────────
-// Each author is assigned the first institution segment (before the first comma)
-// from each semicolon-separated affiliation entry.
-function computeInstitutes() {
-  const cnt = new Map();
-
-  for (const [author, d] of allNodes) {
-    const parts = d.affiliations
-      ? d.affiliations.split(';').map(s => s.split(',')[0].trim()).filter(Boolean)
-      : [];
-    const insts = parts.length ? [...new Set(parts)] : ['Unknown affiliation'];
-    nodeInstMap.set(author, insts);
-    for (const name of insts) cnt.set(name, (cnt.get(name) || 0) + 1);
-  }
-
-  // Sort by author count descending
-  const sorted = [...cnt.entries()].sort((a, b) => b[1] - a[1]);
-
-  // Top 20 get distinct palette colors; the rest share OTHER_COLOR
-  instColorMap.clear();
-  sorted.forEach(([name], i) => {
-    instColorMap.set(name, i < 20 ? PALETTE[i] : OTHER_COLOR);
-  });
-
-  allInstitutes = sorted.map(([name, count]) => ({ name, count, color: instColorMap.get(name) }));
-  selectedInstitutes = new Set(allInstitutes.map(i => i.name));
+  allInstitutes = institutes;
+  selectedInstitutes = new Set(institutes.map(i => i.name));
 
   buildInstituteUI();
   buildLegend();
+  populateDatalist();
+  buildNetwork(nodes, edges);
 }
 
-// Primary color for a node = color of first matched institute
-function getNodeColor(author) {
-  const insts = nodeInstMap.get(author) || [];
-  for (const name of insts) {
-    if (instColorMap.has(name)) return instColorMap.get(name);
-  }
-  return OTHER_COLOR;
-}
-
-// A node is visible if it passes the pub threshold AND at least one of its
-// institutes is in the selected set
-function isNodeVisible(author, data) {
-  if (data.publication_count < currentMinPub) return false;
-  const insts = nodeInstMap.get(author) || ['Unknown affiliation'];
-  return insts.some(name => selectedInstitutes.has(name));
-}
-
-function nodeSize(pub) {
-  return 4 + Math.sqrt(pub) * 8;
-}
-
-// ── Build / rebuild the network ───────────────────────────────────────────────
-function buildNetwork() {
-  if (network) {
-    try { savedPositions = network.getPositions(); } catch (_) {}
-    network.destroy();
-    network = null;
-  }
-  hoverEdgeIds  = [];
-  nodeEdgeIndex = new Map();
-  isPhysicsDone = false;
-
-  const visible = [...allNodes.entries()].filter(([id, d]) => isNodeVisible(id, d));
+// ── Build vis-network (no physics — positions are pre-computed) ───────────────
+function buildNetwork(jsonNodes, jsonEdges) {
+  setLoading('Rendering…');
 
   // ── Nodes ──
-  const visNodes = visible.map(([id, d]) => {
-    const col   = getNodeColor(id);
-    const saved = savedPositions[id];
-    return {
-      id,
-      label: showLabels ? id : '',
-      size: nodeSize(d.publication_count),
-      color: {
-        background: col,
-        border: col,
-        hover:     { background: '#b0c8ff', border: '#b0c8ff' },
-        highlight: { background: '#58a6ff', border: '#58a6ff' }
-      },
-      font: { color: '#c9d1d9', size: 11, face: 'sans-serif', strokeWidth: 2, strokeColor: '#0d1117' },
-      ...(saved ? { x: saved.x, y: saved.y } : {})
-    };
-  });
+  const visNodes = jsonNodes.map(n => ({
+    id:     n.id,
+    x:      n.x,
+    y:      n.y,
+    label:  '',
+    size:   nodeSize(n.pub),
+    hidden: false,   // all visible initially (slider starts at minPub)
+    color: {
+      background: n.color,
+      border:     n.color,
+      hover:      { background: '#b0c8ff', border: '#b0c8ff' },
+      highlight:  { background: '#58a6ff', border: '#58a6ff' }
+    },
+    font: { color: '#c9d1d9', size: 11, face: 'sans-serif', strokeWidth: 2, strokeColor: '#0d1117' }
+  }));
 
-  nodesDS = new vis.DataSet(visNodes);
+  // ── Edges — hidden by default, revealed on hover ──
+  const visEdges = [];
+  nodeEdgeIndex  = new Map();
 
-  // ── Physics edges (hidden) — drive clustering, revealed on hover ──
-  // Adding real edges to the physics engine causes collaborators to attract
-  // each other, producing meaningful collaboration clusters.
-  const visibleSet  = new Set(visible.map(([id]) => id));
-  const addedKeys   = new Set();
-  const physicsEdges = [];
+  for (const e of jsonEdges) {
+    const id = `__e_${e.s < e.t ? e.s : e.t}||${e.s < e.t ? e.t : e.s}`;
+    visEdges.push({ id, from: e.s, to: e.t, value: e.w, hidden: true, physics: false });
 
-  for (const [from] of visible) {
-    const neighbors = adjacencyMap.get(from) || [];
-    for (const { target: to, weight } of neighbors) {
-      if (!visibleSet.has(to)) continue;
-      const key = from < to ? `${from}||${to}` : `${to}||${from}`;
-      if (addedKeys.has(key)) continue;
-      addedKeys.add(key);
-
-      const id = `__e_${key}`;
-      physicsEdges.push({ id, from, to, weight, hidden: true, physics: true });
-
-      // Build per-node index for fast hover lookup
-      if (!nodeEdgeIndex.has(from)) nodeEdgeIndex.set(from, []);
-      nodeEdgeIndex.get(from).push(id);
-      if (!nodeEdgeIndex.has(to)) nodeEdgeIndex.set(to, []);
-      nodeEdgeIndex.get(to).push(id);
-    }
+    if (!nodeEdgeIndex.has(e.s)) nodeEdgeIndex.set(e.s, []);
+    nodeEdgeIndex.get(e.s).push(id);
+    if (!nodeEdgeIndex.has(e.t)) nodeEdgeIndex.set(e.t, []);
+    nodeEdgeIndex.get(e.t).push(id);
   }
 
-  edgesDS = new vis.DataSet(physicsEdges);
-
-  document.getElementById('node-count').textContent =
-    `${visible.length} nodes · ${physicsEdges.length} edges`;
-
-  // ── Physics: forceAtlas2Based gives strong community clustering ──
-  // Higher springConstant + lower springLength → tighter intra-cluster bonds
-  // Higher gravitationalConstant (more negative) → stronger inter-cluster repulsion
-  const useFA2 = visible.length <= 3000;
-  const physicsSolver = useFA2
-    ? {
-        solver: 'forceAtlas2Based',
-        forceAtlas2Based: {
-          gravitationalConstant: -200,   // strong repulsion separates clusters
-          centralGravity: 0.003,         // weak centering → clusters can spread out
-          springLength: 80,              // shorter springs → tighter clusters
-          springConstant: 0.12,          // stiff springs → strong clustering pull
-          damping: 0.5,
-          avoidOverlap: 1.0
-        }
-      }
-    : {
-        solver: 'repulsion',
-        repulsion: { nodeDistance: 120, centralGravity: 0.05, springLength: 100, springConstant: 0.05 }
-      };
-
-  const iters = visible.length > 800 ? 200 : visible.length > 300 ? 400 : 600;
+  nodesDS = new vis.DataSet(visNodes);
+  edgesDS = new vis.DataSet(visEdges);
 
   network = new vis.Network(
     document.getElementById('vis-container'),
     { nodes: nodesDS, edges: edgesDS },
     {
-      physics: {
-        enabled: true,
-        ...physicsSolver,
-        stabilization: { enabled: true, iterations: iters, updateInterval: 60, fit: true }
-      },
-      nodes: { shape: 'dot', borderWidth: 0, chosen: false },
+      physics: { enabled: false },   // positions already computed
+      nodes:   { shape: 'dot', borderWidth: 0, chosen: false },
       edges: {
         smooth: false,
-        color: {
-          color:     'rgba(88, 166, 255, 0.55)',
-          hover:     'rgba(88, 166, 255, 0.85)',
-          highlight: 'rgba(88, 166, 255, 0.85)'
-        },
-        width: 1.5,
-        hoverWidth: 2,
-        selectionWidth: 0
+        color: { color: 'rgba(88,166,255,0.55)', hover: 'rgba(88,166,255,0.85)', highlight: 'rgba(88,166,255,0.85)' },
+        width: 1.5, hoverWidth: 2, selectionWidth: 0
       },
       interaction: {
-        hover: true,
-        tooltipDelay: 0,
-        navigationButtons: false,
-        keyboard: false,
-        multiselect: false,
-        selectConnectedEdges: false
-      },
-      layout: { improvedLayout: visible.length < 150 }
+        hover: true, tooltipDelay: 0,
+        navigationButtons: false, keyboard: false,
+        multiselect: false, selectConnectedEdges: false
+      }
     }
   );
 
-  // ── Events ──
   network.on('hoverNode',  ({ node }) => onHoverNode(node));
   network.on('blurNode',   ()         => onBlurNode());
   network.on('click',      ({ nodes: ns }) => { ns.length ? onClickNode(ns[0]) : hidePopup(); });
   network.on('dragStart',  ()         => hidePopup());
 
-  network.on('stabilizationProgress', ({ iterations, total }) =>
-    setLoading(`Computing layout… ${Math.round(iterations / total * 100)}%`)
-  );
-
-  const onDone = () => {
-    if (isPhysicsDone) return;
-    isPhysicsDone = true;
-    setLoading(null);
-    network.setOptions({ physics: { enabled: false } });
-  };
-  network.on('stabilizationIterationsDone', onDone);
-  network.on('stabilized', onDone);
+  updateNodeCount();
+  setLoading(null);
 }
 
-// ── Hover: reveal edges via show/hide (not add/remove) ───────────────────────
-// Edges are already in the dataset (hidden: true). We flip hidden: false on
-// hover using the pre-built nodeEdgeIndex for O(degree) lookup.
+// ── Hover: show/hide edges ────────────────────────────────────────────────────
 function onHoverNode(node) {
-  // Restore previous hover edges to hidden
   if (hoverEdgeIds.length) {
     edgesDS.update(hoverEdgeIds.map(id => ({ id, hidden: true })));
     hoverEdgeIds = [];
   }
-  // Show this node's edges
   const ids = nodeEdgeIndex.get(node) || [];
   if (ids.length) {
-    edgesDS.update(ids.map(id => ({ id, hidden: false })));
-    hoverEdgeIds = ids;
+    // Only show edges whose other endpoint is currently visible
+    const toShow = ids.filter(id => {
+      const e = edgesDS.get(id);
+      if (!e) return false;
+      const other = e.from === node ? e.to : e.from;
+      const otherNode = nodesDS.get(other);
+      return otherNode && !otherNode.hidden;
+    });
+    if (toShow.length) {
+      edgesDS.update(toShow.map(id => ({ id, hidden: false })));
+      hoverEdgeIds = toShow;
+    }
   }
 }
 
@@ -571,23 +348,19 @@ function onBlurNode() {
   }
 }
 
-// ── Click: show info popup ────────────────────────────────────────────────────
+// ── Click: info popup ─────────────────────────────────────────────────────────
 function onClickNode(nodeId) {
   const d = allNodes.get(nodeId);
   if (!d) return;
 
-  const parts = d.affiliations
-    ? d.affiliations.split(';').map(s => s.trim()).filter(Boolean)
-    : [];
-  const affilText = parts.length === 0
-    ? 'Affiliation not available'
-    : parts.length === 1
-      ? parts[0]
-      : `${parts[0]}  (+${parts.length - 1} more)`;
+  const parts = d.aff ? d.aff.split(';').map(s => s.trim()).filter(Boolean) : [];
+  const affilText = parts.length === 0 ? 'Affiliation not available'
+    : parts.length === 1 ? parts[0]
+    : `${parts[0]}  (+${parts.length - 1} more)`;
 
   document.getElementById('popup-author').textContent = nodeId;
   document.getElementById('popup-affil').textContent  = affilText;
-  document.getElementById('popup-meta').textContent   = `Publications: ${d.publication_count}`;
+  document.getElementById('popup-meta').textContent   = `Publications: ${d.pub}`;
 
   const popup = document.getElementById('popup');
   popup.style.display = 'block';
@@ -596,64 +369,77 @@ function onClickNode(nodeId) {
   if (!canvasPos) return;
   const domPos = network.canvasToDOM(canvasPos);
   const gc = document.getElementById('graph-container');
-  const cw = gc.clientWidth, ch = gc.clientHeight;
   const pw = 290, ph = 110;
-  let left = domPos.x + 22;
-  let top  = domPos.y - 40;
-  if (left + pw > cw - 10) left = domPos.x - pw - 12;
-  if (top  + ph > ch - 10) top  = ch - ph - 10;
+  let left = domPos.x + 22, top = domPos.y - 40;
+  if (left + pw > gc.clientWidth  - 10) left = domPos.x - pw - 12;
+  if (top  + ph > gc.clientHeight - 10) top  = gc.clientHeight - ph - 10;
   popup.style.left = Math.max(5, left) + 'px';
   popup.style.top  = Math.max(5, top)  + 'px';
 }
 
-function hidePopup() {
-  document.getElementById('popup').style.display = 'none';
+function hidePopup() { document.getElementById('popup').style.display = 'none'; }
+
+// ── Filtering: hide/show nodes (no rebuild needed) ────────────────────────────
+function applyFilters() {
+  if (!nodesDS) return;
+  onBlurNode();  // clear hover edges before hiding nodes
+
+  const updates = [];
+  let visible = 0;
+  for (const [id, data] of allNodes) {
+    const hidden = !isNodeVisible(id, data);
+    updates.push({ id, hidden });
+    if (!hidden) visible++;
+  }
+  nodesDS.update(updates);
+  updateNodeCount(visible);
+}
+
+function updateNodeCount(visibleCount) {
+  if (visibleCount === undefined) {
+    visibleCount = [...allNodes.keys()].filter(id => !nodesDS.get(id)?.hidden).length;
+  }
+  document.getElementById('node-count').textContent =
+    `${visibleCount.toLocaleString()} / ${allNodes.size.toLocaleString()} authors`;
 }
 
 // ── Sidebar: institute checkboxes ─────────────────────────────────────────────
 function buildInstituteUI() {
   const list = document.getElementById('institute-list');
   list.innerHTML = '';
-
-  for (const { name, count, color } of allInstitutes) {
+  for (const { name, color, count } of allInstitutes) {
     const lbl = document.createElement('label');
     lbl.className = 'filter-label';
 
-    const cb = document.createElement('input');
-    cb.type = 'checkbox';
-    cb.checked = true;
+    const cb  = Object.assign(document.createElement('input'), { type: 'checkbox', checked: true });
     cb.addEventListener('change', () => {
       cb.checked ? selectedInstitutes.add(name) : selectedInstitutes.delete(name);
-      scheduleRebuild();
+      applyFilters();
     });
 
-    const dot = document.createElement('span');
-    dot.className = 'inst-dot';
+    const dot = Object.assign(document.createElement('span'), { className: 'inst-dot' });
     dot.style.background = color;
 
     const nameSpan = document.createElement('span');
     nameSpan.textContent = name;
-    nameSpan.style.overflow = 'hidden';
-    nameSpan.style.textOverflow = 'ellipsis';
-    nameSpan.style.whiteSpace = 'nowrap';
+    Object.assign(nameSpan.style, { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' });
     nameSpan.title = name;
 
-    const countSpan = document.createElement('span');
-    countSpan.className = 'inst-count';
-    countSpan.textContent = count;
+    const countSpan = Object.assign(document.createElement('span'), {
+      className: 'inst-count', textContent: count
+    });
 
     lbl.append(cb, dot, nameSpan, countSpan);
     list.appendChild(lbl);
   }
 }
 
-// ── Sidebar: color legend (top 20 only, + "Others") ──────────────────────────
+// ── Sidebar: legend (top 20 + others) ────────────────────────────────────────
 function buildLegend() {
   const list = document.getElementById('legend-list');
   list.innerHTML = '';
-
-  const top20 = allInstitutes.filter((_, i) => i < 20);
-  const hasOthers = allInstitutes.length > 20;
+  const top20    = allInstitutes.slice(0, 20);
+  const hasOther = allInstitutes.length > 20;
 
   for (const { name, color } of top20) {
     const div = document.createElement('div');
@@ -663,8 +449,7 @@ function buildLegend() {
       `<span title="${name}" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</span>`;
     list.appendChild(div);
   }
-
-  if (hasOthers) {
+  if (hasOther) {
     const div = document.createElement('div');
     div.className = 'legend-item';
     div.innerHTML =
@@ -676,11 +461,11 @@ function buildLegend() {
 
 // ── Search datalist ───────────────────────────────────────────────────────────
 function populateDatalist() {
-  const dl   = document.getElementById('author-dl');
+  const dl = document.getElementById('author-dl');
   const frag = document.createDocumentFragment();
-  for (const author of allNodes.keys()) {
+  for (const id of allNodes.keys()) {
     const opt = document.createElement('option');
-    opt.value = author;
+    opt.value = id;
     frag.appendChild(opt);
   }
   dl.appendChild(frag);
@@ -691,39 +476,33 @@ function zoomToAuthor() {
   const raw = document.getElementById('search-input').value.trim();
   if (!raw) return;
 
-  let name = nodesDS.get(raw) ? raw : null;
+  let name = nodesDS.get(raw) && !nodesDS.get(raw).hidden ? raw : null;
   if (!name) {
     const lower = raw.toLowerCase();
-    name = nodesDS.getIds().find(id => id.toLowerCase() === lower) || null;
+    name = nodesDS.getIds().find(id => !nodesDS.get(id).hidden && id.toLowerCase() === lower) || null;
   }
 
   if (!name) {
     const exists = [...allNodes.keys()].some(k => k.toLowerCase() === raw.toLowerCase());
     alert(exists
-      ? `"${raw}" is not visible with the current filters.\nTry lowering the publication threshold or enabling their institute.`
+      ? `"${raw}" is not visible with the current filters.`
       : `Author "${raw}" was not found.`
     );
     return;
   }
 
   network.focus(name, { scale: 2.2, animation: { duration: 650, easingFunction: 'easeInOutQuad' } });
-  const orig = getNodeColor(name);
+
+  const orig = allNodes.get(name).color;
   nodesDS.update({ id: name, color: { background: HIGHLIGHT_COLOR, border: HIGHLIGHT_COLOR } });
   setTimeout(() => nodesDS.update({ id: name, color: { background: orig, border: orig } }), 1100);
 }
 
-// ── Debounced rebuild ─────────────────────────────────────────────────────────
-function scheduleRebuild() {
-  clearTimeout(rebuildTimer);
-  setLoading('Rebuilding…');
-  rebuildTimer = setTimeout(buildNetwork, 350);
-}
-
-// ── Control wiring ────────────────────────────────────────────────────────────
+// ── Controls ──────────────────────────────────────────────────────────────────
 document.getElementById('pub-slider').addEventListener('input', e => {
   currentMinPub = +e.target.value;
   document.getElementById('pub-val').textContent = currentMinPub;
-  scheduleRebuild();
+  applyFilters();
 });
 
 document.getElementById('toggle-labels').addEventListener('change', e => {
@@ -741,13 +520,13 @@ document.getElementById('popup-close').addEventListener('click', hidePopup);
 document.getElementById('select-all-btn').addEventListener('click', () => {
   selectedInstitutes = new Set(allInstitutes.map(i => i.name));
   document.querySelectorAll('#institute-list input').forEach(cb => { cb.checked = true; });
-  scheduleRebuild();
+  applyFilters();
 });
 
 document.getElementById('clear-all-btn').addEventListener('click', () => {
   selectedInstitutes.clear();
   document.querySelectorAll('#institute-list input').forEach(cb => { cb.checked = false; });
-  scheduleRebuild();
+  applyFilters();
 });
 
 document.getElementById('search-btn').addEventListener('click', zoomToAuthor);
@@ -756,17 +535,16 @@ document.getElementById('search-input').addEventListener('keydown', e => {
 });
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
-loadData().catch(err => {
+loadGraph().catch(err => {
   document.getElementById('loading-overlay').innerHTML = `
     <p style="color:#f85149;font-size:13px;line-height:1.7">
-      Failed to load data:<br>
+      Failed to load graph.json:<br>
       <strong>${err.message}</strong><br><br>
       <span style="color:#8b949e;font-size:11px">
-        <b>GitHub Pages:</b> make sure nodes.csv and edges.csv<br>
-        are committed to the same repo folder.<br><br>
+        Run <code style="color:#79c0ff">python precompute.py</code> first<br>
+        to generate graph.json, then commit it.<br><br>
         <b>Local testing:</b><br>
-        <code style="color:#79c0ff">python -m http.server 8080</code><br>
-        then open <code style="color:#79c0ff">localhost:8080</code>
+        <code style="color:#79c0ff">python -m http.server 8080</code>
       </span>
     </p>`;
   document.getElementById('loading-overlay').style.display = 'block';
