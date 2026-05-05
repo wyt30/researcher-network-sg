@@ -162,7 +162,7 @@
     </div>
 
     <div class="section">
-      <h3>Color Legend</h3>
+      <h3>Cluster Colors</h3>
       <div id="legend-list"></div>
     </div>
 
@@ -189,8 +189,9 @@
 const HIGHLIGHT_COLOR = '#ffffff';
 const OTHER_COLOR     = '#4a5568';
 
-let allNodes          = new Map();   // id → {pub, aff, color, inst}
+let allNodes          = new Map();   // id → {pub, aff, color, cluster, inst}
 let allInstitutes     = [];          // [{name, color, count}]
+let allClusters       = [];          // [{id, color, size}]
 let selectedInstitutes = new Set();
 let currentMinPub     = 1;
 let minPubInData      = 1;
@@ -199,8 +200,6 @@ let maxPubInData      = 1;
 let network           = null;
 let nodesDS           = null;
 let edgesDS           = null;
-let nodeEdgeIndex     = new Map();   // node id → [edge ids]
-let hoverEdgeIds      = [];
 let showLabels        = false;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -225,7 +224,7 @@ async function loadGraph() {
   if (!resp.ok) throw new Error(`Cannot load graph.json: ${resp.status} ${resp.statusText}`);
   const data = await resp.json();
 
-  const { meta, institutes, nodes, edges } = data;
+  const { meta, institutes, clusters, nodes, edges } = data;
 
   minPubInData  = meta.min_pub;
   maxPubInData  = meta.max_pub;
@@ -240,14 +239,15 @@ async function loadGraph() {
 
   // Build node map
   for (const n of nodes) {
-    allNodes.set(n.id, { pub: n.pub, aff: n.aff, color: n.color, inst: n.inst, x: n.x, y: n.y });
+    allNodes.set(n.id, { pub: n.pub, aff: n.aff, color: n.color, cluster: n.cluster, inst: n.inst, x: n.x, y: n.y });
   }
 
   allInstitutes = institutes;
+  allClusters   = clusters || [];
   selectedInstitutes = new Set(institutes.map(i => i.name));
 
   buildInstituteUI();
-  buildLegend();
+  buildClusterLegend();
   populateDatalist();
   buildNetwork(nodes, edges);
 }
@@ -273,18 +273,12 @@ function buildNetwork(jsonNodes, jsonEdges) {
     font: { color: '#c9d1d9', size: 11, face: 'sans-serif', strokeWidth: 2, strokeColor: '#0d1117' }
   }));
 
-  // ── Edges — hidden by default, revealed on hover ──
+  // ── Edges — visible for weight > 5 connections ──
   const visEdges = [];
-  nodeEdgeIndex  = new Map();
 
   for (const e of jsonEdges) {
     const id = `__e_${e.s < e.t ? e.s : e.t}||${e.s < e.t ? e.t : e.s}`;
-    visEdges.push({ id, from: e.s, to: e.t, value: e.w, hidden: true, physics: false });
-
-    if (!nodeEdgeIndex.has(e.s)) nodeEdgeIndex.set(e.s, []);
-    nodeEdgeIndex.get(e.s).push(id);
-    if (!nodeEdgeIndex.has(e.t)) nodeEdgeIndex.set(e.t, []);
-    nodeEdgeIndex.get(e.t).push(id);
+    visEdges.push({ id, from: e.s, to: e.t, value: e.w, hidden: false, physics: false });
   }
 
   nodesDS = new vis.DataSet(visNodes);
@@ -298,8 +292,8 @@ function buildNetwork(jsonNodes, jsonEdges) {
       nodes:   { shape: 'dot', borderWidth: 0, chosen: false },
       edges: {
         smooth: false,
-        color: { color: 'rgba(88,166,255,0.55)', hover: 'rgba(88,166,255,0.85)', highlight: 'rgba(88,166,255,0.85)' },
-        width: 1.5, hoverWidth: 2, selectionWidth: 0
+        color: { color: 'rgba(180,180,180,0.18)', hover: 'rgba(88,166,255,0.85)', highlight: 'rgba(88,166,255,0.85)' },
+        width: 0.8, hoverWidth: 2, selectionWidth: 0
       },
       interaction: {
         hover: true, tooltipDelay: 0,
@@ -309,8 +303,6 @@ function buildNetwork(jsonNodes, jsonEdges) {
     }
   );
 
-  network.on('hoverNode',  ({ node }) => onHoverNode(node));
-  network.on('blurNode',   ()         => onBlurNode());
   network.on('click',      ({ nodes: ns }) => { ns.length ? onClickNode(ns[0]) : hidePopup(); });
   network.on('dragStart',  ()         => hidePopup());
 
@@ -318,35 +310,6 @@ function buildNetwork(jsonNodes, jsonEdges) {
   setLoading(null);
 }
 
-// ── Hover: show/hide edges ────────────────────────────────────────────────────
-function onHoverNode(node) {
-  if (hoverEdgeIds.length) {
-    edgesDS.update(hoverEdgeIds.map(id => ({ id, hidden: true })));
-    hoverEdgeIds = [];
-  }
-  const ids = nodeEdgeIndex.get(node) || [];
-  if (ids.length) {
-    // Only show edges whose other endpoint is currently visible
-    const toShow = ids.filter(id => {
-      const e = edgesDS.get(id);
-      if (!e) return false;
-      const other = e.from === node ? e.to : e.from;
-      const otherNode = nodesDS.get(other);
-      return otherNode && !otherNode.hidden;
-    });
-    if (toShow.length) {
-      edgesDS.update(toShow.map(id => ({ id, hidden: false })));
-      hoverEdgeIds = toShow;
-    }
-  }
-}
-
-function onBlurNode() {
-  if (hoverEdgeIds.length) {
-    edgesDS.update(hoverEdgeIds.map(id => ({ id, hidden: true })));
-    hoverEdgeIds = [];
-  }
-}
 
 // ── Click: info popup ─────────────────────────────────────────────────────────
 function onClickNode(nodeId) {
@@ -382,7 +345,6 @@ function hidePopup() { document.getElementById('popup').style.display = 'none'; 
 // ── Filtering: hide/show nodes (no rebuild needed) ────────────────────────────
 function applyFilters() {
   if (!nodesDS) return;
-  onBlurNode();  // clear hover edges before hiding nodes
 
   const updates = [];
   let visible = 0;
@@ -434,19 +396,20 @@ function buildInstituteUI() {
   }
 }
 
-// ── Sidebar: legend (top 20 + others) ────────────────────────────────────────
-function buildLegend() {
+// ── Sidebar: cluster color legend ─────────────────────────────────────────────
+function buildClusterLegend() {
   const list = document.getElementById('legend-list');
   list.innerHTML = '';
-  const top20    = allInstitutes.slice(0, 20);
-  const hasOther = allInstitutes.length > 20;
+  const top = allClusters.slice(0, 20);
+  const hasOther = allClusters.length > 20;
 
-  for (const { name, color } of top20) {
+  for (const { id, color, size } of top) {
     const div = document.createElement('div');
     div.className = 'legend-item';
     div.innerHTML =
       `<div class="legend-dot" style="background:${color}"></div>` +
-      `<span title="${name}" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</span>`;
+      `<span style="flex:1">Cluster ${id + 1}</span>` +
+      `<span style="color:#6e7681;font-size:10px;padding-left:4px">${size.toLocaleString()}</span>`;
     list.appendChild(div);
   }
   if (hasOther) {
@@ -454,7 +417,7 @@ function buildLegend() {
     div.className = 'legend-item';
     div.innerHTML =
       `<div class="legend-dot" style="background:${OTHER_COLOR};border:1px solid #444"></div>` +
-      `<span style="color:#8b949e">Other institutes (${allInstitutes.length - 20})</span>`;
+      `<span style="color:#8b949e">Other clusters (${allClusters.length - 20})</span>`;
     list.appendChild(div);
   }
 }
