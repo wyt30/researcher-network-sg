@@ -210,7 +210,7 @@ function setLoading(msg) {
   document.getElementById('loading-text').textContent = msg;
 }
 
-function nodeSize(pub) { return 4 + Math.sqrt(pub) * 8; }
+function nodeSize(pub) { return 2 + Math.sqrt(pub) * 6; }
 
 function isNodeVisible(id, data) {
   return data.pub >= currentMinPub && selectedInstitutes.has(data.inst);
