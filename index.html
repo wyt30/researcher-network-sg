@@ -64,7 +64,7 @@
     .filter-controls { display: flex; gap: 5px; margin-bottom: 6px; }
     .filter-controls .btn { flex: 1; font-size: 11px; padding: 3px 6px; }
 
-    #institute-list { max-height: 240px; overflow-y: auto; }
+    #institute-list { max-height: 480px; overflow-y: auto; }
     .filter-label {
       display: flex; align-items: center; gap: 6px;
       padding: 2px 3px; border-radius: 3px;
@@ -161,10 +161,6 @@
       <div id="institute-list"></div>
     </div>
 
-    <div class="section">
-      <h3>Cluster Colors</h3>
-      <div id="legend-list"></div>
-    </div>
 
   </div>
 
@@ -191,7 +187,6 @@ const OTHER_COLOR     = '#4a5568';
 
 let allNodes          = new Map();   // id → {pub, aff, color, cluster, inst}
 let allInstitutes     = [];          // [{name, color, count}]
-let allClusters       = [];          // [{id, color, size}]
 let selectedInstitutes = new Set();
 let currentMinPub     = 1;
 let minPubInData      = 1;
@@ -210,7 +205,7 @@ function setLoading(msg) {
   document.getElementById('loading-text').textContent = msg;
 }
 
-function nodeSize(pub) { return 2 + Math.sqrt(pub) * 6; }
+function nodeSize(pub) { return Math.sqrt(pub) * 2; }
 
 function isNodeVisible(id, data) {
   return data.pub >= currentMinPub && selectedInstitutes.has(data.inst);
@@ -224,7 +219,7 @@ async function loadGraph() {
   if (!resp.ok) throw new Error(`Cannot load graph.json: ${resp.status} ${resp.statusText}`);
   const data = await resp.json();
 
-  const { meta, institutes, clusters, nodes, edges } = data;
+  const { meta, institutes, nodes, edges } = data;
 
   minPubInData  = meta.min_pub;
   maxPubInData  = meta.max_pub;
@@ -243,11 +238,9 @@ async function loadGraph() {
   }
 
   allInstitutes = institutes;
-  allClusters   = clusters || [];
   selectedInstitutes = new Set(institutes.map(i => i.name));
 
   buildInstituteUI();
-  buildClusterLegend();
   populateDatalist();
   buildNetwork(nodes, edges);
 }
@@ -397,30 +390,6 @@ function buildInstituteUI() {
 }
 
 // ── Sidebar: cluster color legend ─────────────────────────────────────────────
-function buildClusterLegend() {
-  const list = document.getElementById('legend-list');
-  list.innerHTML = '';
-  const top = allClusters.slice(0, 20);
-  const hasOther = allClusters.length > 20;
-
-  for (const { id, color, size } of top) {
-    const div = document.createElement('div');
-    div.className = 'legend-item';
-    div.innerHTML =
-      `<div class="legend-dot" style="background:${color}"></div>` +
-      `<span style="flex:1">Cluster ${id + 1}</span>` +
-      `<span style="color:#6e7681;font-size:10px;padding-left:4px">${size.toLocaleString()}</span>`;
-    list.appendChild(div);
-  }
-  if (hasOther) {
-    const div = document.createElement('div');
-    div.className = 'legend-item';
-    div.innerHTML =
-      `<div class="legend-dot" style="background:${OTHER_COLOR};border:1px solid #444"></div>` +
-      `<span style="color:#8b949e">Other clusters (${allClusters.length - 20})</span>`;
-    list.appendChild(div);
-  }
-}
 
 // ── Search datalist ───────────────────────────────────────────────────────────
 function populateDatalist() {
